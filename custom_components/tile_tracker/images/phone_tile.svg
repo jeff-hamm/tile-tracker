@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="phoneGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3a3a3a;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Phone body -->
+  <rect x="25" y="8" width="50" height="84" rx="8" ry="8" fill="url(#phoneGrad)"/>
+  
+  <!-- Screen -->
+  <rect x="29" y="18" width="42" height="58" rx="2" ry="2" fill="#2a2a2a"/>
+  
+  <!-- Top speaker -->
+  <rect x="40" y="12" width="20" height="3" rx="1.5" ry="1.5" fill="#4a4a4a"/>
+  
+  <!-- Home button -->
+  <circle cx="50" cy="84" r="5" fill="none" stroke="#4a4a4a" stroke-width="1.5"/>
+  
+  <!-- Tile app icon on screen -->
+  <g transform="translate(38, 32)">
+    <rect x="0" y="0" width="24" height="24" rx="4" ry="4" fill="#3a3a3a"/>
+    <!-- Full Tile logo (scaled down) -->
+    <g transform="translate(12, 12)" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <line x1="0" y1="-8" x2="0" y2="8"/>
+      <polyline points="-4,-4 0,-8 4,-4"/>
+      <polyline points="-4,4 0,8 4,4"/>
+      <polyline points="-4,-4 0,0 -4,4"/>
+      <line x1="0" y1="-8" x2="4" y2="-4"/>
+      <line x1="4" y1="-4" x2="0" y2="0"/>
+      <line x1="0" y1="0" x2="4" y2="4"/>
+      <line x1="4" y1="4" x2="0" y2="8"/>
+    </g>
+  </g>
+  
+  <!-- Signal waves from phone -->
+  <g stroke="#fff" stroke-width="2" fill="none" opacity="0.5">
+    <path d="M 78 40 Q 86 50 78 60" stroke-linecap="round"/>
+    <path d="M 84 35 Q 96 50 84 65" stroke-linecap="round"/>
+  </g>
+</svg>

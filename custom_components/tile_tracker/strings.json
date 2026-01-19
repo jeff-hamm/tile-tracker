@@ -1,0 +1,175 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Tile Tracker",
+        "description": "Enter your Tile account credentials to connect your Tile devices.",
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reauthenticate Tile Tracker",
+        "description": "Please enter your new password to reauthenticate.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to Tile API",
+      "invalid_auth": "Invalid email or password",
+      "unknown": "Unknown error occurred"
+    },
+    "abort": {
+      "already_configured": "Account is already configured",
+      "reauth_successful": "Reauthentication successful"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Tile Tracker Options",
+        "description": "Configure Tile Tracker settings",
+        "data": {
+          "scan_interval": "Scan interval (minutes)",
+          "exclude_days": "Disable devices not seen in X days (0 = never disable)",
+          "exclude_invisible": "Disable invisible devices"
+        }
+      }
+    }
+  },
+  "services": {
+    "refresh_tiles": {
+      "name": "Refresh Tiles",
+      "description": "Force refresh all Tile device states from the Tile API."
+    },
+    "play_sound": {
+      "name": "Play Sound",
+      "description": "Play a sound on a Tile device via Bluetooth.",
+      "fields": {
+        "tile_id": {
+          "name": "Tile ID",
+          "description": "The UUID or name of the Tile to ring."
+        },
+        "volume": {
+          "name": "Volume",
+          "description": "Volume level (low, medium, high)."
+        },
+        "duration": {
+          "name": "Duration",
+          "description": "Duration in seconds to ring (1-30)."
+        },
+        "song_id": {
+          "name": "Song",
+          "description": "The song/ringtone to play. If not specified, uses the Tile's selected song."
+        }
+      }
+    },
+    "scan_tiles": {
+      "name": "Scan for Tiles",
+      "description": "Scan for nearby Tile devices via Bluetooth.",
+      "fields": {
+        "timeout": {
+          "name": "Timeout",
+          "description": "How long to scan for devices in seconds."
+        },
+        "force_refresh": {
+          "name": "Force Refresh",
+          "description": "Force a new scan even if cached results are available."
+        }
+      }
+    },
+    "clear_cache": {
+      "name": "Clear BLE Cache",
+      "description": "Clear the Bluetooth device cache."
+    },
+    "set_lost": {
+      "name": "Set Lost Status",
+      "description": "Mark a Tile as lost or found.",
+      "fields": {
+        "tile_id": {
+          "name": "Tile ID",
+          "description": "The UUID or name of the Tile."
+        },
+        "lost": {
+          "name": "Lost",
+          "description": "True to mark as lost, False to mark as found."
+        }
+      }
+    }
+  },
+  "entity": {
+    "device_tracker": {
+      "tile": {
+        "state_attributes": {
+          "advertised_rssi": {
+            "name": "Advertised RSSI"
+          },
+          "speed": {
+            "name": "Speed"
+          },
+          "ring_state": {
+            "name": "Ring State"
+          }
+        }
+      }
+    },
+    "binary_sensor": {
+      "lost": {
+        "name": "Lost",
+        "state": {
+          "on": "Lost",
+          "off": "Found"
+        }
+      }
+    },
+    "button": {
+      "locate": {
+        "name": "Locate"
+      },
+      "refresh": {
+        "name": "Refresh"
+      },
+      "scan": {
+        "name": "Scan"
+      }
+    },
+    "sensor": {
+      "rssi": {
+        "name": "Signal Strength"
+      },
+      "last_seen": {
+        "name": "Last Seen"
+      },
+      "accuracy": {
+        "name": "Location Accuracy"
+      }
+    },
+    "switch": {
+      "lost": {
+        "name": "Lost",
+        "state": {
+          "on": "Lost",
+          "off": "Found"
+        }
+      }
+    },
+    "select": {
+      "song": {
+        "name": "Song",
+        "state": {
+          "default": "Default",
+          "chirp": "Chirp",
+          "chime": "Chime",
+          "bell": "Bell",
+          "alarm": "Alarm",
+          "siren": "Siren",
+          "melody": "Melody",
+          "beep": "Beep"
+        }
+      }
+    }
+  }
+}

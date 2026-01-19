@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="tileGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3a3a3a;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Main tile body - rounded square like a Tile tracker -->
+  <rect x="10" y="10" width="80" height="80" rx="12" ry="12" 
+        fill="url(#tileGrad)" filter="url(#shadow)"/>
+  
+  <!-- Inner border highlight -->
+  <rect x="14" y="14" width="72" height="72" rx="9" ry="9" 
+        fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  
+  <!-- Bluetooth symbol -->
+  <g transform="translate(50, 50)" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Vertical line -->
+    <line x1="0" y1="-20" x2="0" y2="20"/>
+    <!-- Top arrow -->
+    <polyline points="-10,-10 0,-20 10,-10"/>
+    <!-- Bottom arrow pointing right -->
+    <polyline points="-10,10 0,20 10,10"/>
+    <!-- Left chevrons -->
+    <polyline points="-10,-10 0,0 -10,10"/>
+    <!-- Right chevrons (crossed) -->
+    <line x1="0" y1="-20" x2="10" y2="-10"/>
+    <line x1="10" y1="-10" x2="0" y2="0"/>
+    <line x1="0" y1="0" x2="10" y2="10"/>
+    <line x1="10" y1="10" x2="0" y2="20"/>
+  </g>
+  
+  <!-- Signal waves (right side) -->
+  <g stroke="#fff" stroke-width="2" fill="none" opacity="0.6">
+    <path d="M 70 40 Q 78 50 70 60" stroke-linecap="round"/>
+    <path d="M 76 35 Q 88 50 76 65" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Corner hole for keyring -->
+  <circle cx="22" cy="22" r="4" fill="#0a0a0a"/>
+  <circle cx="22" cy="22" r="2.5" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>
+</svg>

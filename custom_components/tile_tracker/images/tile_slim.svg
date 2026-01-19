@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="slimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3a3a3a;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1"/>
+    </linearGradient>
+    <filter id="slimShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Slim/card-style tile body -->
+  <rect x="8" y="20" width="84" height="55" rx="6" ry="6" 
+        fill="url(#slimGrad)" filter="url(#slimShadow)"/>
+  
+  <!-- Credit card style lines -->
+  <rect x="14" y="30" width="30" height="20" rx="2" ry="2" 
+        fill="rgba(255,255,255,0.1)"/>
+  
+  <!-- Full Tile logo (right side) -->
+  <g transform="translate(68, 47)" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <line x1="0" y1="-12" x2="0" y2="12"/>
+    <polyline points="-6,-6 0,-12 6,-6"/>
+    <polyline points="-6,6 0,12 6,6"/>
+    <polyline points="-6,-6 0,0 -6,6"/>
+    <line x1="0" y1="-12" x2="6" y2="-6"/>
+    <line x1="6" y1="-6" x2="0" y2="0"/>
+    <line x1="0" y1="0" x2="6" y2="6"/>
+    <line x1="6" y1="6" x2="0" y2="12"/>
+  </g>
+  
+  <!-- Signal waves -->
+  <g stroke="#fff" stroke-width="1.5" fill="none" opacity="0.5">
+    <path d="M 80 42 Q 85 47 80 52" stroke-linecap="round"/>
+    <path d="M 84 39 Q 91 47 84 55" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Hole for card slot -->
+  <ellipse cx="20" cy="68" rx="3" ry="2" fill="#0a0a0a"/>
+</svg>
