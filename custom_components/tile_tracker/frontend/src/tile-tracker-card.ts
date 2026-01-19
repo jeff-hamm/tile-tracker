@@ -29,7 +29,7 @@ import {
 } from "custom-card-helpers";
 
 // Card version
-const CARD_VERSION = "1.2.0";
+const CARD_VERSION = "1.2.1";
 
 // Log card info on load
 console.info(
