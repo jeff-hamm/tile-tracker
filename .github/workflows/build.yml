@@ -1,0 +1,68 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate manifest.json
+        run: |
+          if ! python3 -c "import json; json.load(open('custom_components/tile_tracker/manifest.json'))"; then
+            echo "Error: Invalid manifest.json"
+            exit 1
+          fi
+          echo "✓ manifest.json is valid"
+
+      - name: Validate hacs.json
+        run: |
+          if ! python3 -c "import json; json.load(open('hacs.json'))"; then
+            echo "Error: Invalid hacs.json"
+            exit 1
+          fi
+          echo "✓ hacs.json is valid"
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        working-directory: custom_components/tile_tracker/frontend
+        run: npm ci || npm install
+
+      - name: Build frontend
+        working-directory: custom_components/tile_tracker/frontend
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          if [ ! -f "custom_components/tile_tracker/www/tile-tracker-card.js" ]; then
+            echo "Error: Build failed - tile-tracker-card.js not found"
+            exit 1
+          fi
+          echo "✓ Frontend build successful"
+          ls -lh custom_components/tile_tracker/www/
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: custom_components/tile_tracker/www/tile-tracker-card.js
+          retention-days: 7

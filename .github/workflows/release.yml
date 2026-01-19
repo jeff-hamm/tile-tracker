@@ -1,0 +1,123 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: custom_components/tile_tracker/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: custom_components/tile_tracker/frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: custom_components/tile_tracker/frontend
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          if [ ! -f "custom_components/tile_tracker/www/tile-tracker-card.js" ]; then
+            echo "Error: tile-tracker-card.js not built"
+            exit 1
+          fi
+          ls -lh custom_components/tile_tracker/www/
+
+      - name: Compress frontend bundle
+        working-directory: custom_components/tile_tracker/www
+        run: gzip -k -f tile-tracker-card.js
+
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Update manifest.json version
+        run: |
+          sed -i 's/"version": "[^"]*"/"version": "${{ steps.get_version.outputs.VERSION }}"/' custom_components/tile_tracker/manifest.json
+          cat custom_components/tile_tracker/manifest.json
+
+      - name: Create release archive
+        run: |
+          cd custom_components
+          zip -r ../tile-tracker-${{ steps.get_version.outputs.VERSION }}.zip tile_tracker/ \
+            -x "tile_tracker/frontend/*" \
+            -x "tile_tracker/.git/*" \
+            -x "tile_tracker/__pycache__/*" \
+            -x "tile_tracker/**/__pycache__/*" \
+            -x "tile_tracker/**/*.pyc"
+          cd ..
+          ls -lh tile-tracker-${{ steps.get_version.outputs.VERSION }}.zip
+
+      - name: Generate changelog
+        id: changelog
+        uses: metcalfc/changelog-generator@v4.3.1
+        with:
+          myToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release v${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## Tile Tracker v${{ steps.get_version.outputs.VERSION }}
+            
+            ### Installation via HACS
+            1. Go to HACS → Integrations
+            2. Click the three dots in the top right → Custom repositories
+            3. Add this repository URL with category "Integration"
+            4. Click "Install" and restart Home Assistant
+            
+            ### Manual Installation
+            1. Download `tile-tracker-${{ steps.get_version.outputs.VERSION }}.zip`
+            2. Extract to `custom_components/tile_tracker/` in your HA config directory
+            3. Restart Home Assistant
+            
+            ### Changes
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ---
+            Built frontend card: `tile-tracker-card.js` (version ${{ steps.get_version.outputs.VERSION }})
+          files: |
+            tile-tracker-${{ steps.get_version.outputs.VERSION }}.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate HACS compatibility
+        run: |
+          echo "Checking HACS requirements..."
+          
+          # Check hacs.json exists
+          if [ ! -f "hacs.json" ]; then
+            echo "Error: hacs.json not found"
+            exit 1
+          fi
+          
+          # Check manifest.json exists
+          if [ ! -f "custom_components/tile_tracker/manifest.json" ]; then
+            echo "Error: manifest.json not found"
+            exit 1
+          fi
+          
+          # Check README exists
+          if [ ! -f "README.md" ]; then
+            echo "Warning: README.md not found"
+          fi
+          
+          echo "✓ HACS validation passed"

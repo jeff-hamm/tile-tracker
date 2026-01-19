@@ -62,10 +62,41 @@ This integration was developed with assistance from Claude (Anthropic).
 ### Building the Frontend
 
 ```bash
+# Quick build
+./build.sh
+
+# Or manually
 cd custom_components/tile_tracker/frontend
 npm install
 npm run build
 ```
+
+### Creating a Release
+
+See [RELEASING.md](RELEASING.md) for detailed release instructions.
+
+```bash
+# Create and prepare a new release
+./release.sh 1.1.0
+
+# Push to GitHub to trigger automated build and release
+git push && git push origin v1.1.0
+```
+
+The release process is automated via GitHub Actions:
+- Frontend is built from TypeScript source
+- Release artifacts are created automatically
+- HACS-compatible ZIP is generated
+- GitHub Release is published with changelog
+
+## Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## License
 

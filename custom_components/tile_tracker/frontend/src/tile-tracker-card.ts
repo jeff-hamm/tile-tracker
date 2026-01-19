@@ -147,6 +147,8 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
   @state() private _composerNotes: ComposerNote[] = [];
   @state() private _selectedDuration = '1/8';
   @state() private _songName = 'Custom Song';
+  @state() private _isRingLoading = false;
+  private _ringTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Get card editor
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
@@ -224,9 +226,10 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
     const tileId = stateObj?.attributes?.tile_uuid || stateObj?.attributes?.tile_id || "";
     const friendlyName = stateObj?.attributes?.friendly_name || "";
     
-    // Convert friendly name to entity slug
+    // Convert friendly name to entity slug - match HA entity naming pattern
     const slug = friendlyName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-    const prefix = slug ? `tile_${slug}` : `tile_${tileId.substring(0, 8)}`;
+    // Entities are named without the 'tile_' prefix (e.g., button.camera_locate, not button.tile_camera_locate)
+    const prefix = slug || tileId.substring(0, 8);
     
     return {
       tileId,
@@ -236,6 +239,42 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
       lostSwitch: `switch.${prefix}_lost`,
       locateButton: `button.${prefix}_locate`,
     };
+  }
+
+  // Format timestamp as relative time (e.g., "5 minutes ago")
+  private _formatRelativeTime(timestamp: string | null | undefined): string | null {
+    if (!timestamp) return null;
+    
+    try {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      
+      // Handle future dates
+      if (diffMs < 0) return "just now";
+      
+      const diffSecs = Math.floor(diffMs / 1000);
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+      const diffWeeks = Math.floor(diffDays / 7);
+      const diffMonths = Math.floor(diffDays / 30);
+      
+      if (diffSecs < 60) return "just now";
+      if (diffMins === 1) return "1 minute ago";
+      if (diffMins < 60) return `${diffMins} minutes ago`;
+      if (diffHours === 1) return "1 hour ago";
+      if (diffHours < 24) return `${diffHours} hours ago`;
+      if (diffDays === 1) return "1 day ago";
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffWeeks === 1) return "1 week ago";
+      if (diffWeeks < 4) return `${diffWeeks} weeks ago`;
+      if (diffMonths === 1) return "1 month ago";
+      if (diffMonths < 12) return `${diffMonths} months ago`;
+      return date.toLocaleDateString();
+    } catch {
+      return null;
+    }
   }
 
   // Render card
@@ -258,14 +297,19 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
     }
 
     const name = this._config.name || stateObj.attributes.friendly_name || entityId;
-    const product = stateObj.attributes.product || "Tile";
+    const product = stateObj.attributes.product || stateObj.attributes.tile_type || "Tile";
     const ringState = stateObj.attributes.ring_state || "silent";
     const batteryLevel = this._getBatteryLevel(stateObj);
-    const batteryStatus = stateObj.attributes.battery_status || "unknown";
+    // Filter out 'none', 'None', null, undefined as battery status
+    const rawBatteryStatus = stateObj.attributes.battery_status as string | undefined;
+    const batteryStatus = (rawBatteryStatus && rawBatteryStatus.toLowerCase() !== "none") ? rawBatteryStatus : "unknown";
+    // Get last seen timestamp
+    const lastTimestamp = stateObj.attributes.last_timestamp as string | undefined;
+    const lastSeen = this._formatRelativeTime(lastTimestamp);
 
     return html`
       <ha-card>
-        ${this._renderHeader(name, product, ringState, batteryLevel, batteryStatus)}
+        ${this._renderHeader(name, product, ringState, batteryLevel, batteryStatus, lastSeen)}
         ${this._config.show_map ? this._renderMap(stateObj) : nothing}
         ${this._renderAttributes(stateObj)}
         ${this._showConfig ? this._renderConfigPanel() : nothing}
@@ -280,17 +324,24 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
     product: string,
     ringState: string,
     batteryLevel: number | null,
-    batteryStatus: string
+    batteryStatus: string,
+    lastSeen: string | null
   ): TemplateResult {
-    const ringColor = RING_STATE_COLORS[ringState] || RING_STATE_COLORS.unknown;
-    const ringIcon = ringState === "ringing" ? "mdi:bell-ring" : "mdi:bell";
+    const isRinging = ringState === "ringing";
     const batteryInfo = this._getBatteryInfo(batteryLevel, batteryStatus);
+    // Ring button styling: only show active (green) when actually ringing
+    const ringColor = isRinging ? RING_STATE_COLORS.ringing : "var(--secondary-background-color)";
+    const ringIconColor = isRinging ? "white" : "var(--primary-text-color)";
+    const ringIcon = this._isRingLoading ? "mdi:loading" : (isRinging ? "mdi:bell-ring" : "mdi:bell");
 
     return html`
       <div class="header" @click=${this._handleHeaderClick}>
         <div class="info">
           <div class="name">${name}</div>
-          <div class="product">${product}</div>
+          <div class="subtitle">
+            <span class="product">${product}</span>
+            ${lastSeen ? html`<span class="last-seen">• ${lastSeen}</span>` : nothing}
+          </div>
         </div>
         <div class="controls">
           <div
@@ -300,22 +351,21 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
           >
             <ha-icon icon="mdi:cog"></ha-icon>
           </div>
-          <div
-            class="ring-button"
-            style="--ring-color: ${ringColor}"
+          <button
+            class="ring-button ${isRinging ? 'active' : ''} ${this._isRingLoading ? 'loading' : ''}"
+            style="--ring-bg: ${ringColor}; --ring-icon-color: ${ringIconColor}"
             @click=${this._handleRingClick}
             title="Ring Tile"
+            ?disabled=${this._isRingLoading}
           >
-            <ha-icon icon="${ringIcon}"></ha-icon>
-          </div>
+            <ha-icon icon="${ringIcon}" class="${this._isRingLoading ? 'spin' : ''}"></ha-icon>
+          </button>
           <div class="battery" title="${batteryInfo.tooltip}">
             <ha-icon
               icon="${batteryInfo.icon}"
               style="color: ${batteryInfo.color}"
             ></ha-icon>
-            ${batteryLevel !== null
-              ? html`<span class="battery-text">${batteryLevel}%</span>`
-              : nothing}
+            <span class="battery-text" style="color: ${batteryInfo.color}">${batteryInfo.text}</span>
           </div>
         </div>
       </div>
@@ -566,15 +616,17 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
 
     const mapHeight = this._config.map_height || 150;
     
+    // Use OpenStreetMap embed as a reliable fallback (ha-map requires complex setup)
+    const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lon - 0.005}%2C${lat - 0.005}%2C${lon + 0.005}%2C${lat + 0.005}&layer=mapnik&marker=${lat}%2C${lon}`;
+    
     return html`
       <div class="map-container" style="height: ${mapHeight}px">
-        <ha-map
-          .hass=${this.hass}
-          .entities=${[{ entity_id: this._config.entity }]}
-          .zoom=${15}
-          .interactiveZones=${false}
-          fitZones
-        ></ha-map>
+        <iframe
+          src="${mapUrl}"
+          style="border: 0; width: 100%; height: 100%;"
+          loading="lazy"
+          title="Tile Location Map"
+        ></iframe>
       </div>
     `;
   }
@@ -654,19 +706,23 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
   private _getBatteryInfo(
     level: number | null,
     status: string
-  ): { icon: string; color: string; tooltip: string } {
+  ): { icon: string; color: string; tooltip: string; text: string } {
+    // Format status text for display (capitalize first letter)
+    const formatStatus = (s: string): string => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
+    
     if (level === null) {
       const statusLower = status.toLowerCase();
       if (statusLower.includes("full") || statusLower.includes("high")) {
-        return { icon: BATTERY_ICONS.full, color: BATTERY_COLORS.high, tooltip: `Battery: ${status}` };
+        return { icon: BATTERY_ICONS.full, color: BATTERY_COLORS.high, tooltip: `Battery: ${status}`, text: formatStatus(status) };
       }
       if (statusLower.includes("medium") || statusLower.includes("ok")) {
-        return { icon: BATTERY_ICONS[50], color: BATTERY_COLORS.medium, tooltip: `Battery: ${status}` };
+        return { icon: BATTERY_ICONS[50], color: BATTERY_COLORS.medium, tooltip: `Battery: ${status}`, text: formatStatus(status) };
       }
       if (statusLower.includes("low")) {
-        return { icon: BATTERY_ICONS[20], color: BATTERY_COLORS.low, tooltip: `Battery: ${status}` };
+        return { icon: BATTERY_ICONS[20], color: BATTERY_COLORS.low, tooltip: `Battery: ${status}`, text: formatStatus(status) };
       }
-      return { icon: BATTERY_ICONS.unknown, color: "#9E9E9E", tooltip: `Battery: ${status}` };
+      // Show status text if available, otherwise empty for unknown
+      return { icon: BATTERY_ICONS.unknown, color: "#9E9E9E", tooltip: `Battery: ${status}`, text: status !== "unknown" ? formatStatus(status) : "" };
     }
 
     let icon = BATTERY_ICONS.outline;
@@ -683,7 +739,7 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
     else if (level >= 15) { icon = BATTERY_ICONS[20]; color = BATTERY_COLORS.low; }
     else if (level >= 5) { icon = BATTERY_ICONS[10]; color = BATTERY_COLORS.low; }
 
-    return { icon, color, tooltip: `Battery: ${level}%` };
+    return { icon, color, tooltip: `Battery: ${level}%`, text: `${level}%` };
   }
 
   // Event handlers
@@ -707,7 +763,26 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
 
   private _handleRingClick(ev: Event): void {
     ev.stopPropagation();
+    
+    if (this._isRingLoading) return;
+    
     const entities = this._getRelatedEntities();
+    const stateObj = this.hass.states[this._config.entity];
+    const duration = stateObj?.attributes?.duration || 5;
+    
+    // Start loading state
+    this._isRingLoading = true;
+    
+    // Clear any existing timer
+    if (this._ringTimer) {
+      clearTimeout(this._ringTimer);
+    }
+    
+    // Set timer to stop loading after duration
+    this._ringTimer = setTimeout(() => {
+      this._isRingLoading = false;
+      this._ringTimer = null;
+    }, (duration as number) * 1000);
     
     // Press the locate button which uses default settings
     this.hass.callService("button", "press", {
@@ -843,6 +918,18 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
         font-size: 0.9em;
       }
 
+      .subtitle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--secondary-text-color);
+        font-size: 0.9em;
+      }
+
+      .last-seen {
+        opacity: 0.8;
+      }
+
       .controls {
         display: flex;
         align-items: center;
@@ -871,23 +958,48 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
         width: 40px;
         height: 40px;
         border-radius: 50%;
-        background: var(--ring-color, #9E9E9E);
-        color: white;
+        background: var(--ring-bg, var(--secondary-background-color));
+        color: var(--ring-icon-color, var(--primary-text-color));
+        border: none;
         cursor: pointer;
         transition: transform 0.2s, box-shadow 0.2s;
       }
 
-      .ring-button:hover {
+      .ring-button:hover:not(:disabled) {
         transform: scale(1.1);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
       }
 
-      .ring-button:active {
+      .ring-button:active:not(:disabled) {
         transform: scale(0.95);
+      }
+
+      .ring-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+
+      .ring-button.active {
+        background: #4CAF50;
+        color: white;
+      }
+
+      .ring-button.loading {
+        background: var(--primary-color);
+        color: white;
       }
 
       .ring-button ha-icon {
         --mdc-icon-size: 24px;
+      }
+
+      .ring-button ha-icon.spin {
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
       }
 
       .battery {
