@@ -54,8 +54,25 @@ Once the tag is pushed, GitHub Actions will automatically:
 To build the frontend locally for testing:
 
 ```bash
+# Production build
 ./build.sh
+
+# Development mode with auto-rebuild and cache clearing
+./dev-watch.sh
+
+# Development mode with auto-restart of Home Assistant
+./dev-watch.sh --auto-restart
+
+# Just clear cache without rebuilding
+./clear-cache.sh
 ```
+
+**Development Workflow:**
+1. Start watch mode: `./dev-watch.sh`
+2. Edit TypeScript files in `custom_components/tile_tracker/frontend/src/`
+3. Script automatically rebuilds and clears cache
+4. Hard refresh browser (Ctrl+Shift+R)
+5. See changes immediately
 
 Or manually:
 

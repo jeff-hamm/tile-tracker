@@ -62,14 +62,29 @@ This integration was developed with assistance from Claude (Anthropic).
 ### Building the Frontend
 
 ```bash
-# Quick build
+# Production build
 ./build.sh
 
-# Or manually
+# Development watch mode (auto-rebuild on changes)
+./dev-watch.sh
+
+# Development watch with auto-restart
+./dev-watch.sh --auto-restart
+
+# Clear cache only (no rebuild)
+./clear-cache.sh
+
+# Manual build
 cd custom_components/tile_tracker/frontend
 npm install
 npm run build
 ```
+
+**Development Tips:**
+- Use `dev-watch.sh` for active development - it rebuilds on file changes and clears cache
+- Use `--auto-restart` flag to automatically restart Home Assistant after each build
+- Always hard-refresh your browser (Ctrl+Shift+R) after rebuilding
+- Check `custom_components/tile_tracker/www/` for build timestamp comments
 
 ### Creating a Release
 
