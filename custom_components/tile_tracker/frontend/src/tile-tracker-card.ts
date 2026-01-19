@@ -233,7 +233,7 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
     // Entities are named without the 'tile_' prefix (e.g., button.camera_locate, not button.tile_camera_locate)
     const prefix = slug || tileId.substring(0, 8);
     
-    return {
+    const result = {
       tileId,
       volumeEntity: `select.${prefix}_default_volume`,
       durationEntity: `number.${prefix}_default_duration`,
@@ -241,6 +241,20 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
       lostSwitch: `switch.${prefix}_lost`,
       locateButton: `button.${prefix}_locate`,
     };
+    
+    // Debug logging
+    console.debug('[Tile Tracker Card] Related entities:', {
+      configEntity: this._config.entity,
+      friendlyName,
+      computedSlug: slug,
+      prefix,
+      entities: result,
+      volumeStateExists: !!this.hass.states[result.volumeEntity],
+      durationStateExists: !!this.hass.states[result.durationEntity],
+      lostStateExists: !!this.hass.states[result.lostSwitch],
+    });
+    
+    return result;
   }
 
   // Format timestamp as relative time (e.g., "5 minutes ago")
@@ -822,6 +836,7 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
   // Config actions
   private _setVolume(volume: string): void {
     const entities = this._getRelatedEntities();
+    console.info('[Tile Tracker Card] Setting volume:', volume, 'on entity:', entities.volumeEntity);
     this.hass.callService("select", "select_option", {
       entity_id: entities.volumeEntity,
       option: volume,
@@ -830,6 +845,7 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
 
   private _setDuration(duration: number): void {
     const entities = this._getRelatedEntities();
+    console.info('[Tile Tracker Card] Setting duration:', duration, 'on entity:', entities.durationEntity);
     this.hass.callService("number", "set_value", {
       entity_id: entities.durationEntity,
       value: duration,
@@ -838,6 +854,7 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
 
   private _setSongOption(song: string): void {
     const entities = this._getRelatedEntities();
+    console.info('[Tile Tracker Card] Setting song:', song, 'on entity:', entities.songEntity);
     this.hass.callService("select", "select_option", {
       entity_id: entities.songEntity,
       option: song,
@@ -846,6 +863,7 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
 
   private _toggleLost(lost: boolean): void {
     const entities = this._getRelatedEntities();
+    console.info('[Tile Tracker Card] Toggling lost:', lost, 'on entity:', entities.lostSwitch);
     this.hass.callService("switch", lost ? "turn_on" : "turn_off", {
       entity_id: entities.lostSwitch,
     });
