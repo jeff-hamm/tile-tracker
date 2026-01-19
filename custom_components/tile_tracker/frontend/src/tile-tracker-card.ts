@@ -226,12 +226,33 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
   } {
     const stateObj = this.hass.states[this._config.entity];
     const tileId = stateObj?.attributes?.tile_uuid || stateObj?.attributes?.tile_id || "";
-    const friendlyName = stateObj?.attributes?.friendly_name || "";
     
-    // Convert friendly name to entity slug - match HA entity naming pattern
-    const slug = friendlyName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-    // Entities are named without the 'tile_' prefix (e.g., button.camera_locate, not button.tile_camera_locate)
-    const prefix = slug || tileId.substring(0, 8);
+    // Derive prefix from entity_id, not friendly_name
+    // Entity ID format: device_tracker.{name}_{name} (duplicate) -> we need just {name}
+    const entityId = this._config.entity;
+    const entitySlug = entityId.replace('device_tracker.', '');
+    
+    // Check for duplicate pattern: "abc_def_abc_def" -> "abc_def"
+    // Split in half and see if both halves match
+    let prefix = entitySlug;
+    if (entitySlug.length % 2 === 0 || entitySlug.includes('_')) {
+      // Try to find duplicate pattern by looking for repeated segment
+      const parts = entitySlug.split('_');
+      if (parts.length >= 2 && parts.length % 2 === 0) {
+        const halfLength = parts.length / 2;
+        const firstHalf = parts.slice(0, halfLength).join('_');
+        const secondHalf = parts.slice(halfLength).join('_');
+        if (firstHalf === secondHalf) {
+          prefix = firstHalf;
+        }
+      }
+    }
+    
+    // Fallback: if prefix still has issues, try using tile name from attributes
+    // or truncated UUID
+    if (!prefix) {
+      prefix = tileId.substring(0, 8);
+    }
     
     const result = {
       tileId,
@@ -245,9 +266,8 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
     // Debug logging
     console.debug('[Tile Tracker Card] Related entities:', {
       configEntity: this._config.entity,
-      friendlyName,
-      computedSlug: slug,
-      prefix,
+      entitySlug,
+      computedPrefix: prefix,
       entities: result,
       volumeStateExists: !!this.hass.states[result.volumeEntity],
       durationStateExists: !!this.hass.states[result.durationEntity],
