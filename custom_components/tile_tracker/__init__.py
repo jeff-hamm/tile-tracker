@@ -72,7 +72,7 @@ PLATFORMS: list[Platform] = [
     Platform.NUMBER,
     Platform.BINARY_SENSOR,
     Platform.SENSOR,
-    Platform.SWITCH,
+    # Platform.SWITCH,  # Removed: Tile API doesn't support setting lost status
 ]
 
 # Service schemas
@@ -356,12 +356,17 @@ async def _async_setup_services(hass: HomeAssistant) -> None:
     
     async def handle_set_lost(call: ServiceCall) -> None:
         """Handle set_lost service call."""
+        # NOTE: The Tile cloud API does not support setting lost status
+        # This service is disabled and will log a warning
         tile_id = call.data[ATTR_TILE_ID]
         lost = call.data[ATTR_LOST]
-        
-        _LOGGER.info("Setting lost=%s for Tile %s", lost, tile_id)
-        
-        # Find the tile and API client
+
+        _LOGGER.warning(
+            "Cannot set lost=%s for Tile %s - the Tile cloud API does not support this feature. "
+            "Please use the official Tile mobile app.",
+            lost, tile_id
+        )
+        return  # Exit early, don't attempt API call
         tile_service = get_tile_service(hass)
         tile = tile_service.get_tile_from_coordinator(tile_id)
         

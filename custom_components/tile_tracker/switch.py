@@ -13,6 +13,7 @@ from typing import Any
 from homeassistant.components.switch import SwitchEntity, SwitchDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -142,17 +143,29 @@ class TileLostSwitch(CoordinatorEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Mark the Tile as lost."""
-        _LOGGER.info("Marking Tile %s as lost", self._tile_uuid)
-        success = await self._api.set_lost(self._tile_uuid, True)
-        if success:
-            await self.coordinator.async_request_refresh()
+        _LOGGER.warning(
+            "Cannot mark Tile %s as lost - the Tile cloud API does not support this feature. "
+            "Please use the official Tile mobile app.",
+            self._tile_uuid
+        )
+        # Raise error to show notification in UI
+        raise HomeAssistantError(
+            "The Tile cloud API does not support marking tiles as lost. "
+            "Please use the official Tile mobile app to mark your Tile as lost."
+        )
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Mark the Tile as found."""
-        _LOGGER.info("Marking Tile %s as found", self._tile_uuid)
-        success = await self._api.set_lost(self._tile_uuid, False)
-        if success:
-            await self.coordinator.async_request_refresh()
+        _LOGGER.warning(
+            "Cannot mark Tile %s as found - the Tile cloud API does not support this feature. "
+            "Please use the official Tile mobile app.",
+            self._tile_uuid
+        )
+        # Raise error to show notification in UI
+        raise HomeAssistantError(
+            "The Tile cloud API does not support marking tiles as found. "
+            "Please use the official Tile mobile app to mark your Tile as found."
+        )
 
     @callback
     def _handle_coordinator_update(self) -> None:

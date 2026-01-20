@@ -340,36 +340,29 @@ class TileApiClient:
     async def set_lost(self, tile_uuid: str, lost: bool) -> bool:
         """Mark a tile as lost or found.
         
+        NOTE: The Tile cloud API does not support programmatically marking tiles as lost.
+        Tested endpoints (all failed):
+        - PATCH /tiles/{uuid} → 405 Method Not Allowed
+        - PUT /tiles/{uuid} → 415 Unsupported Media Type
+        - POST /tiles/{uuid}/lost → 404 Not Found
+        - PUT /tiles/{uuid}/state → 404 Not Found
+        
+        This feature can only be used through the official Tile mobile app.
+        This method exists for API compatibility but always returns False.
+        
         Args:
             tile_uuid: The UUID of the tile
             lost: True to mark as lost, False to mark as found
             
         Returns:
-            True if successful, False otherwise
+            False (API does not support this operation)
         """
-        session = await self._get_session()
-        
-        url = f"{TILE_API_BASE}/tiles/{tile_uuid}"
-        headers = self._get_headers()
-        headers["Content-Type"] = "application/json"
-        
-        data = {"lost": lost}
-        
-        try:
-            async with session.patch(url, headers=headers, json=data) as response:
-                result = await response.json()
-                
-                if result.get("result_code") != 0:
-                    error_msg = result.get("result", {}).get("message", "Unknown error")
-                    _LOGGER.error("Error setting lost status for %s: %s", tile_uuid, error_msg)
-                    return False
-                
-                _LOGGER.info("Set lost=%s for tile %s", lost, tile_uuid)
-                return True
-
-        except aiohttp.ClientError as err:
-            _LOGGER.error("Error setting lost status for %s: %s", tile_uuid, err)
-            return False
+        _LOGGER.warning(
+            "Cannot set lost status for tile %s - the Tile cloud API does not support this feature. "
+            "Please use the official Tile mobile app to mark tiles as lost/found.",
+            tile_uuid
+        )
+        return False
 
     async def get_tile_raw(self, tile_uuid: str) -> dict[str, Any] | None:
         """Get raw API response for a tile (for diagnostics).

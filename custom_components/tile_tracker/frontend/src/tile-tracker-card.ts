@@ -393,14 +393,15 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
           >
             <ha-icon icon="mdi:cog"></ha-icon>
           </div>
-          <button
-            class="action-icon-button ${isLost ? 'active-lost' : ''}"
-            style="--btn-bg: ${lostColor}; --btn-icon-color: ${lostIconColor}"
-            @click=${this._handleLostClick}
-            title="${isLost ? 'Tile is marked as lost' : 'Mark as lost'}"
-          >
-            <ha-icon icon="${isLost ? 'mdi:alert-circle' : 'mdi:crosshairs-question'}"></ha-icon>
-          </button>
+          ${isLost ? html`
+            <div
+              class="lost-badge"
+              title="Tile is marked as lost (use Tile app to change)"
+            >
+              <ha-icon icon="mdi:alert-circle"></ha-icon>
+              <span>Lost</span>
+            </div>
+          ` : nothing}
           <button
             class="action-icon-button ${isRinging ? 'active-ring' : ''} ${this._isRingLoading ? 'loading' : ''}"
             style="--btn-bg: ${ringColor}; --btn-icon-color: ${ringIconColor}"
@@ -419,7 +420,6 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
           </div>
         </div>
       </div>
-      ${this._showLostConfirm ? this._renderLostConfirmDialog() : nothing}
     `;
   }
 
@@ -781,49 +781,6 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
     this._showComposer = !this._showComposer;
   }
 
-  private _handleLostClick(ev: Event): void {
-    ev.stopPropagation();
-    
-    const stateObj = this.hass.states[this._config.entity];
-    const isLost = stateObj?.attributes?.lost === true;
-    
-    if (isLost) {
-      // Already lost, just turn it off
-      this._toggleLost(false);
-    } else {
-      // Show confirmation dialog before marking as lost
-      this._showLostConfirm = true;
-    }
-  }
-
-  private _confirmMarkLost(): void {
-    this._showLostConfirm = false;
-    this._toggleLost(true);
-  }
-
-  private _cancelLostConfirm(): void {
-    this._showLostConfirm = false;
-  }
-
-  private _renderLostConfirmDialog(): TemplateResult {
-    return html`
-      <div class="confirm-overlay" @click=${this._cancelLostConfirm}>
-        <div class="confirm-dialog" @click=${(e: Event) => e.stopPropagation()}>
-          <div class="confirm-icon">🔍</div>
-          <div class="confirm-title">Mark Tile as Lost?</div>
-          <div class="confirm-message">
-            This will notify Tile's community network to help locate your device.
-            Your Tile will be flagged as lost in the Tile app and network.
-          </div>
-          <div class="confirm-actions">
-            <button class="confirm-btn cancel" @click=${this._cancelLostConfirm}>Cancel</button>
-            <button class="confirm-btn confirm" @click=${this._confirmMarkLost}>Mark as Lost</button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
   private _handleRingClick(ev: Event): void {
     ev.stopPropagation();
     
@@ -1051,9 +1008,22 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
         color: white;
       }
 
-      .action-icon-button.active-lost {
+      /* Lost status badge (read-only) */
+      .lost-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 16px;
         background: var(--error-color, #f44336);
         color: white;
+        font-size: 0.85em;
+        font-weight: 500;
+        cursor: help;
+      }
+
+      .lost-badge ha-icon {
+        --mdc-icon-size: 18px;
       }
 
       .action-icon-button.loading {
@@ -1082,80 +1052,6 @@ export class TileTrackerCard extends LitElement implements LovelaceCard {
         border: none;
         cursor: pointer;
         transition: transform 0.2s, box-shadow 0.2s;
-      }
-
-      /* Confirmation Dialog */
-      .confirm-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.6);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 999;
-      }
-
-      .confirm-dialog {
-        background: var(--card-background-color, #fff);
-        border-radius: 12px;
-        padding: 24px;
-        max-width: 320px;
-        width: 90%;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        text-align: center;
-      }
-
-      .confirm-icon {
-        font-size: 48px;
-        margin-bottom: 16px;
-      }
-
-      .confirm-title {
-        font-size: 1.2em;
-        font-weight: 600;
-        margin-bottom: 12px;
-        color: var(--primary-text-color);
-      }
-
-      .confirm-message {
-        font-size: 0.9em;
-        color: var(--secondary-text-color);
-        margin-bottom: 24px;
-        line-height: 1.4;
-      }
-
-      .confirm-actions {
-        display: flex;
-        gap: 12px;
-        justify-content: center;
-      }
-
-      .confirm-btn {
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-size: 0.95em;
-        font-weight: 500;
-        cursor: pointer;
-        transition: opacity 0.2s;
-        border: none;
-      }
-
-      .confirm-btn:hover {
-        opacity: 0.9;
-      }
-
-      .confirm-btn.cancel {
-        background: var(--secondary-background-color);
-        color: var(--primary-text-color);
-        border: 1px solid var(--divider-color);
-      }
-
-      .confirm-btn.confirm {
-        background: var(--error-color, #f44336);
-        color: white;
       }
 
       @keyframes spin {
